@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Spritely Foundry — 3D Sprite Studio</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script>
+    <script src="/vendor/jszip.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Spritely Foundry 首页">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="brand-copy"><strong>SPRITELY</strong><small>FOUNDRY</small></span>
+        </a>
+        <div class="project-breadcrumb"><span>PROJECT</span><b id="projectName">UNTITLED ASSET</b></div>
+        <div class="top-actions">
+          <div class="local-badge"><span></span>浏览器本地处理 · <b id="portLabel"></b></div>
+          <button class="quiet-button" id="resetButton" type="button">新建</button>
+          <button class="import-button" id="headerImportButton" type="button">导入模型 <b>⌘O</b></button>
+        </div>
+      </header>
+
+      <main class="studio">
+        <nav class="tool-rail" aria-label="视窗工具">
+          <div class="rail-label">TOOLS</div>
+          <button class="tool-button active" type="button" title="旋转视图"><span>↻</span><small>旋转</small></button>
+          <button class="tool-button" id="focusButton" type="button" title="重新对焦模型"><span>⌗</span><small>对焦</small></button>
+          <button class="tool-button" id="frontButton" type="button" title="切换到正面"><span>⊙</span><small>正面</small></button>
+          <div class="rail-rule"></div>
+          <button class="tool-button active" id="toggleFrameButton" type="button" title="显示或隐藏裁切框"><span>□</span><small>边界</small></button>
+          <div class="rail-spacer"></div><span class="version">V1.4</span>
+        </nav>
+
+        <section class="stage" aria-label="3D 模型工作区">
+          <div class="stage-bar">
+            <div class="stage-title"><span class="section-index">01</span><div><h1>模型视窗</h1><p id="modelStats">等待导入 3D 模型</p></div></div>
+            <div class="view-mode"><button class="active" type="button">材质</button><button type="button" disabled>线框</button></div>
+          </div>
+          <div class="viewport" id="viewport">
+            <div id="canvasHost" aria-label="可旋转的 3D 模型预览"></div>
+            <div class="capture-frame" id="captureFrame" aria-hidden="true">
+              <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
+              <i class="center-x"></i><i class="center-y"></i><em id="frameLabel">256 × 256</em>
+            </div>
+            <div class="drop-zone" id="dropZone">
+              <input id="fileInput" type="file" accept=".glb,.gltf,.obj,.bin,.png,.jpg,.jpeg,.webp" multiple />
+              <div class="drop-icon" aria-hidden="true"><span>3D</span><i>↓</i></div>
+              <p class="overline">NEW SOURCE ASSET</p><h2>投放一个 3D 模型</h2>
+              <p>GLB · glTF · OBJ<br />文件只在当前浏览器中处理</p>
+              <button id="browseButton" class="secondary-button" type="button">浏览本地文件</button>
+            </div>
+            <div class="compass" id="compass">
+              <span class="north">N</span><span class="east">E</span><span class="south">S</span><span class="west">W</span>
+              <button id="compassDial" type="button" title="切换到下一个方向"><i></i><b id="compassValue">8</b><small>DIR</small></button>
+            </div>
+            <div class="viewport-meta"><span>ORTHOGRAPHIC CAPTURE</span><span>拖动旋转 · 滚轮缩放 · 右键平移</span></div>
+            <div class="toast-status" id="statusLine" data-kind="idle"><span class="status-pulse"></span><span id="statusText">准备就绪</span></div>
+          </div>
+        </section>
+
+        <aside class="inspector">
+          <div class="inspector-head"><div><span class="section-index">02</span><h1>输出设置</h1></div><span class="saved-state" id="savedState">自动保存</span></div>
+          <form id="settingsForm">
+            <section class="settings-section">
+              <div class="section-label"><span>动画</span><small>ANIMATION</small></div>
+              <label class="select-field"><select id="animationSelect" disabled><option>请先载入模型</option></select></label>
+              <div class="timeline">
+                <div class="transport">
+                  <button id="previousFrameButton" type="button" disabled title="上一帧">‹</button>
+                  <button id="playButton" class="play-button" type="button" disabled title="播放或暂停"><span>Ⅱ</span></button>
+                  <button id="nextFrameButton" type="button" disabled title="下一帧">›</button>
+                  <output id="timelineTime">00:00.000</output>
+                </div>
+                <input id="timelineInput" type="range" min="0" max="1000" value="0" disabled aria-label="动画时间轴" />
+              </div>
+            </section>
+            <section class="settings-section">
+              <div class="section-label"><span>方向采样</span><small>DIRECTIONS</small></div>
+              <div class="segmented" data-target="directionsInput"><button type="button" data-value="4">4</button><button type="button" class="active" data-value="8">8</button><button type="button" data-value="16">16</button><button type="button" data-value="32">32</button></div>
+              <div class="inline-control"><label for="directionsInput">自定义方向</label><div class="stepper"><button type="button" data-step="-1" data-for="directionsInput">−</button><input id="directionsInput" type="number" min="1" max="64" value="8" /><button type="button" data-step="1" data-for="directionsInput">+</button></div></div>
+            </section>
+            <section class="settings-section">
+              <div class="section-label"><span>帧与画布</span><small>FRAME & CANVAS</small></div>
+              <div class="inline-control"><label for="framesInput">每方向帧数</label><div class="stepper"><button type="button" data-step="-1" data-for="framesInput">−</button><input id="framesInput" type="number" min="1" max="64" value="8" /><button type="button" data-step="1" data-for="framesInput">+</button></div></div>
+              <div class="size-presets"><button type="button" data-size="128">128</button><button type="button" class="active" data-size="256">256</button><button type="button" data-size="512">512</button><button type="button" data-size="1024">1K</button></div>
+              <div class="dimension-grid">
+                <label><span>宽度</span><div><input id="widthInput" type="number" min="16" max="2048" step="16" value="256" /><em>PX</em></div></label><i>×</i>
+                <label><span>高度</span><div><input id="heightInput" type="number" min="16" max="2048" step="16" value="256" /><em>PX</em></div></label>
+              </div>
+            </section>
+            <section class="settings-section compact-settings">
+              <label class="range-field"><span><b>俯视角 <em>实时</em></b><output id="elevationOutput">15°</output></span><input id="elevationInput" type="range" min="-30" max="75" value="15" /></label>
+              <label class="range-field"><span><b>模型留白 <em>实时</em></b><output id="marginOutput">8%</output></span><input id="marginInput" type="range" min="0" max="50" value="8" /></label>
+            </section>
+            <section class="settings-section">
+              <div class="section-label"><span>背景</span><small>BACKGROUND</small></div>
+              <div class="background-picker">
+                <button type="button" class="bg-option active" data-background="transparent"><i class="checker"></i><span>透明</span></button>
+                <button type="button" class="bg-option" data-background="#111514"><i class="dark"></i><span>深色</span></button>
+                <button type="button" class="bg-option" data-background="#f1efe4"><i class="light"></i><span>浅色</span></button>
+                <label class="custom-color"><input id="colorInput" type="color" value="#e5653e" /><span>自定</span></label>
+              </div>
+            </section>
+            <div class="render-summary"><span><small>预计图集</small><strong id="sheetMath">2048 × 2048 PX</strong></span><span><small>总帧数</small><strong id="totalFrames">64</strong></span></div>
+            <button id="generateButton" class="generate-button" type="submit" disabled><span class="button-label">生成 Sprite Sheet</span><span class="button-progress" id="buttonProgress">开始渲染</span><i id="buttonProgressBar"></i></button>
+          </form>
+        </aside>
+
+        <section class="output-dock" id="resultPanel">
+          <div class="dock-head">
+            <div><span class="section-index">03</span><h1>输出检视</h1><p id="resultInfo">生成后可在这里核对图集</p></div>
+            <div class="dock-tools">
+              <div class="preview-tabs" role="tablist" aria-label="输出预览模式">
+                <button id="sheetTab" class="active" type="button" role="tab" aria-selected="true">图集</button>
+                <button id="directionsTab" type="button" role="tab" aria-selected="false" disabled>八方向九宫格</button>
+              </div>
+              <button class="dock-toggle" id="dockToggle" type="button">收起 <span>⌄</span></button>
+            </div>
+          </div>
+          <div class="dock-content">
+            <div class="result-canvas">
+              <div class="sheet-pane" id="sheetPane">
+                <div class="result-empty" id="resultEmpty"><span>尚未生成</span><p>设置参数后点击右侧生成按钮</p></div>
+                <img id="sheetPreview" alt="生成的 Sprite Sheet 预览" hidden />
+              </div>
+              <div class="direction-pane" id="directionPane" hidden>
+                <figure class="direction-card pos-nw" data-direction="7"><img alt="左上方向动画" /><figcaption>UP–L <span>315°</span></figcaption></figure>
+                <figure class="direction-card pos-n" data-direction="0"><img alt="上方向动画" /><figcaption>UP <span>0°</span></figcaption></figure>
+                <figure class="direction-card pos-ne" data-direction="1"><img alt="右上方向动画" /><figcaption>UP–R <span>45°</span></figcaption></figure>
+                <figure class="direction-card pos-w" data-direction="6"><img alt="左方向动画" /><figcaption>LEFT <span>270°</span></figcaption></figure>
+                <div class="direction-hub">
+                  <span>8-DIR</span><strong id="directionAnimationName">ANIMATION</strong>
+                  <button id="directionPlayButton" type="button"><i>Ⅱ</i><small>同步播放</small></button>
+                  <output id="directionFrameCounter">01 / 01</output>
+                </div>
+                <figure class="direction-card pos-e" data-direction="2"><img alt="右方向动画" /><figcaption>RIGHT <span>90°</span></figcaption></figure>
+                <figure class="direction-card pos-sw" data-direction="5"><img alt="左下方向动画" /><figcaption>DOWN–L <span>225°</span></figcaption></figure>
+                <figure class="direction-card pos-s" data-direction="4"><img alt="下方向动画" /><figcaption>DOWN <span>180°</span></figcaption></figure>
+                <figure class="direction-card pos-se" data-direction="3"><img alt="右下方向动画" /><figcaption>DOWN–R <span>135°</span></figcaption></figure>
+              </div>
+            </div>
+            <div class="artifact-summary"><div class="artifact-icon">▦</div><div><small>SPRITE PACKAGE</small><strong id="packageName">等待输出</strong><p>单帧 PNG · Sheet · Metadata</p></div></div>
+            <div class="result-actions"><button id="downloadSheetButton" class="secondary-download" type="button" disabled>仅下载图集</button><button id="downloadButton" class="primary-download" type="button" disabled>下载完整 ZIP <span>↓</span></button></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
