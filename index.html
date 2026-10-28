@@ -33,7 +33,7 @@
           <button class="tool-button" id="frontButton" type="button" title="切换到正面"><span>⊙</span><small>正面</small></button>
           <div class="rail-rule"></div>
           <button class="tool-button active" id="toggleFrameButton" type="button" title="显示或隐藏裁切框"><span>□</span><small>边界</small></button>
-          <div class="rail-spacer"></div><span class="version">V1.4</span>
+          <div class="rail-spacer"></div><span class="version">V1.5</span>
         </nav>
 
         <section class="stage" aria-label="3D 模型工作区">
@@ -52,7 +52,11 @@
               <div class="drop-icon" aria-hidden="true"><span>3D</span><i>↓</i></div>
               <p class="overline">NEW SOURCE ASSET</p><h2>投放一个 3D 模型</h2>
               <p>GLB · glTF · OBJ<br />文件只在当前浏览器中处理</p>
-              <button id="browseButton" class="secondary-button" type="button">浏览本地文件</button>
+              <div class="drop-actions">
+                <button id="browseButton" class="secondary-button" type="button">浏览本地文件</button>
+                <button id="exampleButton" class="example-button" type="button"><span>立即体验</span>载入 Fox 动画示例</button>
+              </div>
+              <small class="example-meta">内置示例 · 3 段动画 · 约 160 KB</small>
             </div>
             <div class="compass" id="compass">
               <span class="north">N</span><span class="east">E</span><span class="south">S</span><span class="west">W</span>

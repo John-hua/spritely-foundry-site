@@ -5,7 +5,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
-  port: $("#portLabel"), projectName: $("#projectName"), dropZone: $("#dropZone"), fileInput: $("#fileInput"), browse: $("#browseButton"), headerImport: $("#headerImportButton"),
+  port: $("#portLabel"), projectName: $("#projectName"), dropZone: $("#dropZone"), fileInput: $("#fileInput"), browse: $("#browseButton"), example: $("#exampleButton"), headerImport: $("#headerImportButton"),
   viewport: $("#viewport"), canvasHost: $("#canvasHost"), statusLine: $("#statusLine"), status: $("#statusText"), modelStats: $("#modelStats"), captureFrame: $("#captureFrame"), frameLabel: $("#frameLabel"),
   play: $("#playButton"), previousFrame: $("#previousFrameButton"), nextFrame: $("#nextFrameButton"), timeline: $("#timelineInput"), timelineTime: $("#timelineTime"),
   reset: $("#resetButton"), focus: $("#focusButton"), front: $("#frontButton"), toggleFrame: $("#toggleFrameButton"), compassDial: $("#compassDial"), compassValue: $("#compassValue"),
@@ -277,6 +277,23 @@ async function loadFiles(fileList) {
   updateMath();
 }
 
+async function loadExampleModel() {
+  const defaultLabel = elements.example.innerHTML;
+  elements.example.disabled = true;
+  elements.example.textContent = "正在载入示例…";
+  try {
+    const response = await fetch("/examples/Fox.glb");
+    if (!response.ok) throw new Error(`示例模型下载失败（HTTP ${response.status}）`);
+    const blob = await response.blob();
+    const file = new File([blob], "Fox.glb", { type: "model/gltf-binary" });
+    await loadFiles([file]);
+    setStatus("Fox 示例已载入：可切换 Survey、Walk、Run 动画", "success");
+  } finally {
+    elements.example.disabled = false;
+    elements.example.innerHTML = defaultLabel;
+  }
+}
+
 function populateAnimations() {
   elements.animation.innerHTML = "";
   if (!clips.length) {
@@ -526,6 +543,11 @@ function resetProject() {
 }
 
 elements.browse.addEventListener("click", (event) => { event.preventDefault(); elements.fileInput.click(); });
+elements.example.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  loadExampleModel().catch((error) => setStatus(error.message, "error"));
+});
 elements.headerImport.addEventListener("click", () => elements.fileInput.click());
 elements.fileInput.addEventListener("change", () => loadFiles(elements.fileInput.files).catch((error) => setStatus(error.message, "error")));
 for (const eventName of ["dragenter", "dragover"]) elements.dropZone.addEventListener(eventName, (event) => { event.preventDefault(); elements.dropZone.classList.add("dragging"); });
