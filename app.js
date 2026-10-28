@@ -282,7 +282,7 @@ async function loadExampleModel() {
   elements.example.disabled = true;
   elements.example.textContent = "正在载入示例…";
   try {
-    const response = await fetch("/examples/Fox.glb");
+    const response = await fetch("./examples/Fox.glb");
     if (!response.ok) throw new Error(`示例模型下载失败（HTTP ${response.status}）`);
     const blob = await response.blob();
     const file = new File([blob], "Fox.glb", { type: "model/gltf-binary" });
